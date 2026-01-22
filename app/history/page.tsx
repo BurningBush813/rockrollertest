@@ -1,5 +1,3 @@
-// app/history/page.tsx
-
 export default function HistoryPage() {
   return (
     <main style={{ padding: 16 }}>
