@@ -9,7 +9,6 @@ type Profile = {
   ageRange: string;
   handicap?: string;
   state: string;
-  pfpDataUrl?: string; // optional uploaded image (stored locally for MVP)
 };
 
 const STORAGE_PREFIX = "rr_profile_v1:";
@@ -35,14 +34,13 @@ export default function ProfilePage() {
   const storageKey = useMemo(() => (email ? `${STORAGE_PREFIX}${email}` : ""), [email]);
 
   const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+
   const [profile, setProfile] = useState<Profile>({
     ageRange: "",
     handicap: "",
     state: "",
-    pfpDataUrl: "",
   });
-
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!storageKey) return;
@@ -55,7 +53,6 @@ export default function ProfilePage() {
           ageRange: parsed.ageRange || "",
           handicap: parsed.handicap || "",
           state: parsed.state || "",
-          pfpDataUrl: parsed.pfpDataUrl || "",
         });
       }
     } catch {
@@ -130,19 +127,7 @@ export default function ProfilePage() {
 
   const name = session.user.name || "Golfer";
   const googleImage = session.user.image || "";
-  const avatarSrc = profile.pfpDataUrl || googleImage || "/rockroller.png";
-
-  async function onPickPfp(file: File | null) {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = String(reader.result || "");
-      setProfile((p) => ({ ...p, pfpDataUrl: result }));
-    };
-    reader.readAsDataURL(file);
-  }
+  const avatarSrc = googleImage || "/rockroller.png";
 
   async function saveProfile() {
     if (!storageKey) return;
@@ -153,7 +138,6 @@ export default function ProfilePage() {
         ageRange: profile.ageRange,
         handicap: profile.handicap ? clampHandicap(profile.handicap) : "",
         state: profile.state,
-        pfpDataUrl: profile.pfpDataUrl || "",
       };
       localStorage.setItem(storageKey, JSON.stringify(toSave));
       setProfile(toSave);
@@ -188,6 +172,7 @@ export default function ProfilePage() {
     fontSize: 16,
     fontWeight: 750,
     outline: "none",
+    boxSizing: "border-box",
   };
 
   return (
@@ -375,16 +360,17 @@ export default function ProfilePage() {
           ) : null}
         </div>
 
+        {/* Fields (no PFP upload) */}
         <div
           style={{
             marginTop: 16,
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
             gap: 16,
           }}
         >
           {/* Age Range */}
-          <div style={{ display: "grid", gap: 8 }}>
+          <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
             <label style={labelStyle}>Age Range</label>
             <select
               value={profile.ageRange}
@@ -401,7 +387,7 @@ export default function ProfilePage() {
           </div>
 
           {/* State */}
-          <div style={{ display: "grid", gap: 8 }}>
+          <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
             <label style={labelStyle}>State</label>
             <select
               value={profile.state}
@@ -418,7 +404,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Handicap */}
-          <div style={{ display: "grid", gap: 8 }}>
+          <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
             <label style={labelStyle}>Handicap (optional)</label>
             <input
               value={profile.handicap || ""}
@@ -430,21 +416,12 @@ export default function ProfilePage() {
             <div style={helpStyle}>Leave blank if you don’t track it.</div>
           </div>
 
-          {/* PFP */}
-          <div style={{ display: "grid", gap: 8 }}>
-            <label style={labelStyle}>Profile Photo (optional)</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => onPickPfp(e.target.files?.[0] ?? null)}
-              style={{
-                ...fieldStyle,
-                padding: "10px 12px",
-                fontSize: 14,
-                fontWeight: 750,
-              }}
-            />
-            <div style={helpStyle}>If you don’t upload one, we’ll use your Google photo.</div>
+          {/* Placeholder card so grid stays balanced (optional) */}
+          <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
+            <label style={labelStyle}>Profile Photo</label>
+            <div style={{ ...helpStyle }}>
+              Uses your Google photo by default. Upload coming later.
+            </div>
           </div>
         </div>
 
